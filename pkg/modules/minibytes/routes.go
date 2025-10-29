@@ -1,10 +1,10 @@
 package minibytes
 
 import (
+	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"os"
+	"os/exec"
 
 	"github.com/gotenberg/gotenberg/v8/pkg/modules/api"
 	"github.com/labstack/echo/v4"
@@ -29,24 +29,26 @@ func minibytesRoute() api.Route {
 			// TODO: Will the framework outomatically handle multiple files?
 			var outputPaths []string
 			for _, inputPath := range inputPaths {
-				// open uploaded file (inputPath is a path on disk)
-				f, err := os.Open(inputPath)
-				if err != nil {
-					return err
-				}
+				// generate a temporary output PNG path
+				outputPath := ctx.GeneratePath(".png")
 
-				buf := make([]byte, 100)
-				n, err := f.Read(buf)
-				// close ASAP
-				_ = f.Close()
-				if err != nil && err != io.EOF {
-					return err
-				}
+				// run Ghostscript to render first page as PNG
+				cmd := exec.CommandContext(context.Background(),
+					"gs",
+					"-q",
+					"-dNOPAUSE",
+					"-dBATCH",
+					"-dSAFER",
+					"-sDEVICE=pngalpha",
+					"-dFirstPage=1",
+					"-dLastPage=1",
+					"-r150", // resolution in DPI
+					"-sOutputFile="+outputPath,
+					inputPath,
+				)
 
-				// create an output path and write the bytes
-				outputPath := ctx.GeneratePath(".bin")
-				if err := os.WriteFile(outputPath, buf[:n], 0644); err != nil {
-					return err
+				if err := cmd.Run(); err != nil {
+					return fmt.Errorf("failed to generate preview for %s: %w", inputPath, err)
 				}
 
 				outputPaths = append(outputPaths, outputPath)
