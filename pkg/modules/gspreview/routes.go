@@ -26,6 +26,15 @@ func gspreviewRoute() api.Route {
 			if err != nil {
 				return fmt.Errorf("validate form data: %w", err)
 			}
+			xsize := 0
+			err = form.Int("xsize", &xsize, -1).Validate()
+			if err != nil {
+				return fmt.Errorf("parse xsize: %w", err)
+			}
+			sizeArgument := "-r150"
+			if xsize > 0 {
+				sizeArgument = fmt.Sprintf("-r%d", xsize)
+			}
 
 			// TODO: Will the framework outomatically handle multiple files?
 			var outputPaths []string
@@ -36,7 +45,7 @@ func gspreviewRoute() api.Route {
 				// run Ghostscript to render first page as PNG
 				// TODO: review options:
 				//  Ensure non-transparent?
-				//  Size in pixels?
+				//  Size in pixels? (not really possible in pure ghostscript)
 				//  ???
 				cmd := exec.CommandContext(context.Background(),
 					"gs",
@@ -47,7 +56,7 @@ func gspreviewRoute() api.Route {
 					"-sDEVICE=pngalpha",
 					"-dFirstPage=1",
 					"-dLastPage=1",
-					"-r150", // resolution in DPI
+					sizeArgument, // "-r150", // Prorenata: gs only support output size in as DPI... Maybe use magickimage?
 					"-sOutputFile="+outputPath,
 					inputPath,
 				)
