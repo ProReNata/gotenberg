@@ -7,13 +7,14 @@ import (
 	"os/exec"
 
 	"github.com/gotenberg/gotenberg/v8/pkg/modules/api"
+	// Where is this used???
 	"github.com/labstack/echo/v4"
 )
 
-func minibytesRoute() api.Route {
+func gspreviewRoute() api.Route {
 	return api.Route{
 		Method:      http.MethodPost,
-		Path:        "/forms/minibytes",
+		Path:        "/forms/gspreview",
 		IsMultipart: true,
 		Handler: func(c echo.Context) error {
 			ctx := c.Get("context").(*api.Context)
@@ -33,6 +34,10 @@ func minibytesRoute() api.Route {
 				outputPath := ctx.GeneratePath(".png")
 
 				// run Ghostscript to render first page as PNG
+				// TODO: review options:
+				//  Ensure non-transparent?
+				//  Size in pixels?
+				//  ???
 				cmd := exec.CommandContext(context.Background(),
 					"gs",
 					"-q",

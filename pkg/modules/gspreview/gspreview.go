@@ -9,11 +9,12 @@ func init() {
 	gotenberg.MustRegisterModule(new(Module))
 }
 
+// TODO: add desired output dimensions as an option
 type Module struct{}
 
 func (m *Module) Descriptor() gotenberg.ModuleDescriptor {
 	return gotenberg.ModuleDescriptor{
-		ID:  "minibytes",
+		ID:  "gspreview",
 		New: func() gotenberg.Module { return new(Module) },
 	}
 }
@@ -25,6 +26,6 @@ func (m *Module) Debug() map[string]interface{}          { return nil }
 // Routes returns the HTTP routes.
 func (mod *Module) Routes() ([]api.Route, error) {
 	return []api.Route{
-		minibytesRoute(),
+		gspreviewRoute(),
 	}, nil
 }
