@@ -11,7 +11,7 @@ ARG GOLANG_VERSION=1.25.0
 FROM golang:$GOLANG_VERSION AS pdfcpu-binary-stage
 
 # See https://github.com/pdfcpu/pdfcpu/releases.
-ARG PDFCPU_VERSION=v0.11.0
+ARG PDFCPU_VERSION=v0.11.1
 ENV CGO_ENABLED=0
 
 # Define the working directory outside of $GOPATH (we're using go modules).
@@ -93,7 +93,7 @@ ARG GOTENBERG_VERSION=snapshot
 ARG GOTENBERG_USER_GID=1001
 ARG GOTENBERG_USER_UID=1001
 # See https://github.com/googlefonts/noto-emoji/releases.
-ARG NOTO_COLOR_EMOJI_VERSION=v2.048
+ARG NOTO_COLOR_EMOJI_VERSION=v2.051
 # See https://gitlab.com/pdftk-java/pdftk/-/releases - Binary package.
 ARG PDFTK_VERSION=v3.3.3
 
@@ -176,6 +176,20 @@ RUN \
     # Cleanup.
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+RUN \
+    # Install Hyphenation for LibreOffice.
+    # Credits: https://wiki.archlinux.org/title/LibreOffice.
+    apt-get update -qq &&\
+    apt-get upgrade -yqq &&\
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+        hyphen-af hyphen-as hyphen-be hyphen-bg hyphen-bn hyphen-ca hyphen-cs hyphen-da hyphen-de hyphen-el \
+        hyphen-en-gb hyphen-en-us hyphen-eo hyphen-es hyphen-fr hyphen-gl hyphen-gu hyphen-hi hyphen-hr hyphen-hu \
+        hyphen-id hyphen-is hyphen-it hyphen-kn hyphen-lt hyphen-lv hyphen-ml hyphen-mn hyphen-mr hyphen-nl \
+        hyphen-no hyphen-or hyphen-pa hyphen-pl hyphen-pt-br hyphen-pt-pt hyphen-ro hyphen-ru hyphen-sk hyphen-sl \
+        hyphen-sr hyphen-sv hyphen-ta hyphen-te hyphen-th hyphen-uk hyphen-zu &&\
+    # Cleanup.
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 # Prorenata: Exclude chromium from image if we don't use it
 # RUN \
 #     # Install Chromium.
@@ -194,7 +208,7 @@ RUN \
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
-# Prorenata: This libreOffice installation is about 500MB 
+# Prorenata: This libreOffice installation is about 500MB
 RUN \
     # Install LibreOffice & unoconverter. \
     echo "deb http://deb.debian.org/debian trixie-backports main" >> /etc/apt/sources.list &&\
