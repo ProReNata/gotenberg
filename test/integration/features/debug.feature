@@ -18,33 +18,27 @@ Feature: /debug
         "architecture": "ignore",
         "modules": [
           "api",
-          "chromium",
           "exiftool",
+          "gspreview",
           "libreoffice",
           "libreoffice-api",
           "libreoffice-pdfengine",
           "logging",
           "pdfcpu",
           "pdfengines",
-          "pdftk",
           "prometheus",
           "qpdf",
           "webhook"
         ],
         "modules_additional_data": {
-          "chromium": {
-            "version": "ignore"
-          },
           "exiftool": {
             "version": "ignore"
           },
+          "gspreview": null,
           "libreoffice-api": {
             "version": "ignore"
           },
           "pdfcpu": {
-            "version": "ignore"
-          },
-          "pdftk": {
             "version": "ignore"
           },
           "qpdf": {
@@ -69,23 +63,6 @@ Feature: /debug
           "api-tls-cert-file": "",
           "api-tls-key-file": "",
           "api-trace-header": "Gotenberg-Trace",
-          "chromium-allow-file-access-from-files": "false",
-          "chromium-allow-insecure-localhost": "false",
-          "chromium-allow-list": "",
-          "chromium-auto-start": "false",
-          "chromium-clear-cache": "false",
-          "chromium-clear-cookies": "false",
-          "chromium-deny-list": "^file:(?!//\\/tmp/).*",
-          "chromium-disable-javascript": "false",
-          "chromium-disable-routes": "false",
-          "chromium-disable-web-security": "false",
-          "chromium-host-resolver-rules": "",
-          "chromium-ignore-certificate-errors": "false",
-          "chromium-incognito": "false",
-          "chromium-max-queue-size": "0",
-          "chromium-proxy-server": "",
-          "chromium-restart-after": "10",
-          "chromium-start-timeout": "20s",
           "gotenberg-build-debug-data": "true",
           "gotenberg-graceful-shutdown-duration": "30s",
           "libreoffice-auto-start": "false",
@@ -97,12 +74,12 @@ Feature: /debug
           "log-format": "auto",
           "log-level": "info",
           "pdfengines-convert-engines": "[libreoffice-pdfengine]",
-          "pdfengines-disable-routes": "false",
+          "pdfengines-disable-routes": "true",
           "pdfengines-engines": "[]",
           "pdfengines-flatten-engines": "[qpdf]",
-          "pdfengines-merge-engines": "[qpdf,pdfcpu,pdftk]",
+          "pdfengines-merge-engines": "[qpdf,pdfcpu]",
           "pdfengines-read-metadata-engines": "[exiftool]",
-          "pdfengines-split-engines": "[pdfcpu,qpdf,pdftk]",
+          "pdfengines-split-engines": "[pdfcpu,qpdf]",
           "pdfengines-write-metadata-engines": "[exiftool]",
           "prometheus-collect-interval": "1s",
           "prometheus-disable-collect": "false",
