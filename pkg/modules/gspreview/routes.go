@@ -7,7 +7,6 @@ import (
 	"os/exec"
 
 	"github.com/gotenberg/gotenberg/v8/pkg/modules/api"
-	// Where is this used???
 	"github.com/labstack/echo/v4"
 )
 
@@ -26,40 +25,35 @@ func gspreviewRoute() api.Route {
 			if err != nil {
 				return fmt.Errorf("validate form data: %w", err)
 			}
+
 			xsize := 0
-			err = form.Int("xsize", &xsize, -1).Validate()
+			err = form.Int("xsize", &xsize, 0).Validate()
 			if err != nil {
 				return fmt.Errorf("parse xsize: %w", err)
 			}
-			sizeArgument := "-r150"
+			sizeArgument := "1200x"
 			if xsize > 0 {
-				sizeArgument = fmt.Sprintf("-r%d", xsize)
+				sizeArgument = fmt.Sprintf("%dx", xsize)
 			}
 
-			// TODO: Will the framework outomatically handle multiple files?
 			var outputPaths []string
 			for _, inputPath := range inputPaths {
-				// generate a temporary output PNG path
-				outputPath := ctx.GeneratePath(".png")
-
-				// run Ghostscript to render first page as PNG
-				// TODO: review options:
-				//  Ensure non-transparent?
-				//  Size in pixels? (not really possible in pure ghostscript)
-				//  ???
-				cmd := exec.CommandContext(context.Background(),
-					"gs",
-					"-q",
-					"-dNOPAUSE",
-					"-dBATCH",
-					"-dSAFER",
-					"-sDEVICE=pngalpha",
-					"-dFirstPage=1",
-					"-dLastPage=1",
-					sizeArgument, // "-r150", // Prorenata: gs only support output size in as DPI... Maybe use magickimage?
-					"-sOutputFile="+outputPath,
-					inputPath,
-				)
+				outputPath := ctx.GeneratePath(".png") // Tmp output path
+				var cmd *exec.Cmd
+				if xsize > 0 {
+					cmd = exec.CommandContext(context.Background(),
+						"gm", "convert", "-adjoin",
+						"-define", "pdf:use-cropbox=true",
+						"-density", "150",
+						"-resize", sizeArgument,
+						"-quality", "100",
+						fmt.Sprintf("%s[0]", inputPath), outputPath,
+					)
+				} else {
+					cmd = exec.CommandContext(context.Background(),
+						"gm", "convert", fmt.Sprintf("%s[0]", inputPath), outputPath,
+					)
+				}
 
 				if err := cmd.Run(); err != nil {
 					return fmt.Errorf("failed to generate preview for %s: %w", inputPath, err)
@@ -68,7 +62,6 @@ func gspreviewRoute() api.Route {
 				outputPaths = append(outputPaths, outputPath)
 			}
 
-			// register outputs so Gotenberg will return them to the client
 			return ctx.AddOutputPaths(outputPaths...)
 		},
 	}

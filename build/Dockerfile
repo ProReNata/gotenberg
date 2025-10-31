@@ -227,6 +227,7 @@ RUN \
 
 # Prorenata: exclude pdftk from image (avoid Java runtime...)
 # Prorenata: add ghostscript
+# Prorenata: add graphicsmagic (gives more control over preview generator)
 RUN \
     # Install PDFtk, QPDF & ExifTool (PDF engines).
     # See https://github.com/gotenberg/gotenberg/pull/273.
@@ -236,7 +237,7 @@ RUN \
     # chmod +x /usr/bin/pdftk &&\
     apt-get update -qq &&\
     apt-get upgrade -yqq &&\
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends qpdf exiftool ghostscript &&\
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends qpdf exiftool ghostscript graphicsmagick &&\
     # See https://github.com/nextcloud/docker/issues/380.
     mkdir -p /usr/share/man/man1 &&\
     # Verify installations.
