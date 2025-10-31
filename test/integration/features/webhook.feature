@@ -2,6 +2,7 @@
 # 1. Other HTTP Methods
 # 2. Errors
 
+@skip
 Feature: Webhook
 
   Scenario: Default

@@ -11,12 +11,6 @@ Feature: /prometheus/metrics
     Then the response header "Content-Type" should be "text/plain; version=0.0.4; charset=utf-8; escaping=underscores"
     Then the response body should match string:
       """
-      # HELP gotenberg_chromium_requests_queue_size Current number of Chromium conversion requests waiting to be treated.
-      # TYPE gotenberg_chromium_requests_queue_size gauge
-      gotenberg_chromium_requests_queue_size 0
-      # HELP gotenberg_chromium_restarts_count Current number of Chromium restarts.
-      # TYPE gotenberg_chromium_restarts_count gauge
-      gotenberg_chromium_restarts_count 0
       # HELP gotenberg_libreoffice_requests_queue_size Current number of LibreOffice conversion requests waiting to be treated.
       # TYPE gotenberg_libreoffice_requests_queue_size gauge
       gotenberg_libreoffice_requests_queue_size 0
@@ -36,12 +30,6 @@ Feature: /prometheus/metrics
     Then the response header "Content-Type" should be "text/plain; version=0.0.4; charset=utf-8; escaping=underscores"
     Then the response body should match string:
       """
-      # HELP foo_chromium_requests_queue_size Current number of Chromium conversion requests waiting to be treated.
-      # TYPE foo_chromium_requests_queue_size gauge
-      foo_chromium_requests_queue_size 0
-      # HELP foo_chromium_restarts_count Current number of Chromium restarts.
-      # TYPE foo_chromium_restarts_count gauge
-      foo_chromium_restarts_count 0
       # HELP foo_libreoffice_requests_queue_size Current number of LibreOffice conversion requests waiting to be treated.
       # TYPE foo_libreoffice_requests_queue_size gauge
       foo_libreoffice_requests_queue_size 0

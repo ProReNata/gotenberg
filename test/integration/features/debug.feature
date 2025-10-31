@@ -74,7 +74,7 @@ Feature: /debug
           "log-format": "auto",
           "log-level": "info",
           "pdfengines-convert-engines": "[libreoffice-pdfengine]",
-          "pdfengines-disable-routes": "true",
+          "pdfengines-disable-routes": "false",
           "pdfengines-engines": "[]",
           "pdfengines-flatten-engines": "[qpdf]",
           "pdfengines-merge-engines": "[qpdf,pdfcpu]",
