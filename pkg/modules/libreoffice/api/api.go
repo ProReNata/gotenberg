@@ -152,8 +152,7 @@ type Options struct {
 	PdfFormats gotenberg.PdfFormats
 
 	// Set output format for conversion.
-	// Extends route to also export to plain text and html.
-	// TODO: make a struct of strings as PdfFormats...
+	// Extends route to also export to plain text.
 	OutputFormat string
 }
 

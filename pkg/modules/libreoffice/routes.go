@@ -145,9 +145,10 @@ func convertRoute(libreOffice libreofficeapi.Uno, engine gotenberg.PdfEngine) ap
 				case "text":
 					outputPaths[i] = ctx.GeneratePath(".txt")
 				default:
+					formatErrorMsg := "outputFormat must be one of [pdf, text]"
 					return api.WrapError(
-						fmt.Errorf("invalid out format: %s", outputFormat),
-						api.NewSentinelHttpError(http.StatusBadRequest, fmt.Sprintf("invalid out format: %s", outputFormat)),
+						fmt.Errorf("%s", formatErrorMsg),
+						api.NewSentinelHttpError(http.StatusBadRequest, formatErrorMsg),
 					)
 				}
 				options := libreofficeapi.Options{

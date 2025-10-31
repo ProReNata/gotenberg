@@ -29,7 +29,10 @@ func gspreviewRoute() api.Route {
 			}
 			if outputFormat != "auto" && outputFormat != "png" && outputFormat != "pdf" {
 				formatErrorMsg := "outputFormat must be one of [auto, png, pdf]"
-				return api.WrapError(fmt.Errorf("%s", formatErrorMsg), api.NewSentinelHttpError(http.StatusBadRequest, formatErrorMsg))
+				return api.WrapError(
+					fmt.Errorf("%s", formatErrorMsg),
+					api.NewSentinelHttpError(http.StatusBadRequest, formatErrorMsg),
+				)
 			}
 			sizeArgument := "1200x"
 			if xsize > 0 {
