@@ -21,9 +21,8 @@ func gspreviewRoute() api.Route {
 
 			form := ctx.FormData()
 			inputPaths := []string{}
-			// TODO: create own method to accept all file extensions?
-			// Or just create a slice extensions of the provided files...
-			err := form.MandatoryPaths([]string{".tiff", ".pdf"}, &inputPaths).
+
+			err := form.AnyMandatoryPaths(&inputPaths).
 				Validate()
 			if err != nil {
 				return fmt.Errorf("validate form data: %w", err)
