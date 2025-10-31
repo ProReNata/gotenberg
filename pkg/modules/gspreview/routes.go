@@ -21,18 +21,12 @@ func gspreviewRoute() api.Route {
 
 			form := ctx.FormData()
 			inputPaths := []string{}
-
-			err := form.AnyMandatoryPaths(&inputPaths).
-				Validate()
+			xsize := 0
+			err := form.AnyMandatoryPaths(&inputPaths).Int("xsize", &xsize, 0).Validate()
 			if err != nil {
 				return fmt.Errorf("validate form data: %w", err)
 			}
 
-			xsize := 0
-			err = form.Int("xsize", &xsize, 0).Validate()
-			if err != nil {
-				return fmt.Errorf("parse xsize: %w", err)
-			}
 			sizeArgument := "1200x"
 			if xsize > 0 {
 				sizeArgument = fmt.Sprintf("%dx", xsize)
