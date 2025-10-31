@@ -167,6 +167,14 @@ test-integration: ## Run integration tests
  	--gotenberg-container-platform=$(PLATFORM) \
  	--no-concurrency=$(NO_CONCURRENCY)
 
+.PHONY: test-prorenata
+test-prorenata: ## Run Prorenata integration tests ONLY
+	GODOG_TAGS="@prorenata" go test -timeout 40m -tags=integration -v github.com/gotenberg/gotenberg/v8/test/integration -args \
+	--gotenberg-docker-repository=$(DOCKER_REPOSITORY) \
+	--gotenberg-version=$(GOTENBERG_VERSION) \
+ 	--gotenberg-container-platform=$(PLATFORM) \
+ 	--no-concurrency=$(NO_CONCURRENCY)
+
 .PHONY: lint
 lint: ## Lint Golang codebase
 	golangci-lint run
