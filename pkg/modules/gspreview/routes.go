@@ -38,11 +38,11 @@ func gspreviewRoute() api.Route {
 
 			var outputPaths []string
 			for _, inputPath := range inputPaths {
-				isPDF := (outputFormat == "auto" && strings.HasSuffix(strings.ToLower(inputPath), ".pdf")) || outputFormat == "png"
+				toPng := (outputFormat == "auto" && strings.HasSuffix(strings.ToLower(inputPath), ".pdf")) || outputFormat == "png"
 				var outputPath string
 				var cmd *exec.Cmd
-				if isPDF {
-					// "gm" parameters copied from Eketorp
+				if toPng {
+					// "gm" parameters copied from Eketorp 3.80.0
 					outputPath = ctx.GeneratePath(".png")
 					cmd = exec.CommandContext(context.Background(),
 						"gm", "convert", "-adjoin",
