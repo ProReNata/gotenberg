@@ -161,7 +161,7 @@ NO_CONCURRENCY=false
 
 .PHONY: test-integration
 test-integration: ## Run integration tests
-	GODOG_TAGS="~@skip" go test -timeout 40m -tags=integration -v github.com/gotenberg/gotenberg/v8/test/integration -args \
+	GODOG_TAGS="~@prorenata_skip" go test -timeout 40m -tags=integration -v github.com/gotenberg/gotenberg/v8/test/integration -args \
 	--gotenberg-docker-repository=$(DOCKER_REPOSITORY) \
 	--gotenberg-version=$(GOTENBERG_VERSION) \
  	--gotenberg-container-platform=$(PLATFORM) \

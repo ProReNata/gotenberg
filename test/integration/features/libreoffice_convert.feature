@@ -481,7 +481,6 @@ Feature: /forms/libreoffice/convert
     Then the response PDF(s) should be valid "PDF/A-1b" with a tolerance of 1 failed rule(s)
     Then the response PDF(s) should be valid "PDF/UA-1" with a tolerance of 3 failed rule(s)
 
-  @skip
   Scenario: POST /forms/libreoffice/convert (Metadata)
     Given I have a default Gotenberg container
     When I make a "POST" request to Gotenberg at the "/forms/libreoffice/convert" endpoint with the following form data and header(s):

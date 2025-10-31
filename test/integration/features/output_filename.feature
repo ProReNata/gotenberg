@@ -1,4 +1,4 @@
-@skip
+@prorenata_skip
 Feature: Output Filename
 
   Scenario: Default (Single Output File)

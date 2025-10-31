@@ -2,7 +2,7 @@
 # 1. Other HTTP Methods
 # 2. Errors
 
-@skip
+@prorenata_skip
 Feature: Webhook
 
   Scenario: Default
