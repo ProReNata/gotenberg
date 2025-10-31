@@ -1,4 +1,4 @@
-package minibytes
+package gspreview
 
 import (
 	"github.com/gotenberg/gotenberg/v8/pkg/gotenberg"

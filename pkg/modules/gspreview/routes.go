@@ -1,10 +1,11 @@
-package minibytes
+package gspreview
 
 import (
 	"context"
 	"fmt"
 	"net/http"
 	"os/exec"
+	"strings"
 
 	"github.com/gotenberg/gotenberg/v8/pkg/modules/api"
 	"github.com/labstack/echo/v4"
@@ -20,7 +21,9 @@ func gspreviewRoute() api.Route {
 
 			form := ctx.FormData()
 			inputPaths := []string{}
-			err := form.MandatoryPaths([]string{".rtf", ".pdf"}, &inputPaths).
+			// TODO: create own method to accept all file extensions?
+			// Or just create a slice extensions of the provided files...
+			err := form.MandatoryPaths([]string{".tiff", ".pdf"}, &inputPaths).
 				Validate()
 			if err != nil {
 				return fmt.Errorf("validate form data: %w", err)
@@ -38,9 +41,12 @@ func gspreviewRoute() api.Route {
 
 			var outputPaths []string
 			for _, inputPath := range inputPaths {
-				outputPath := ctx.GeneratePath(".png") // Tmp output path
+				// TODO: option to set conversion mode explicily with input argument?
+				isPDF := strings.HasSuffix(strings.ToLower(inputPath), ".pdf")
+				var outputPath string
 				var cmd *exec.Cmd
-				if xsize > 0 {
+				if isPDF {
+					outputPath = ctx.GeneratePath(".png")
 					cmd = exec.CommandContext(context.Background(),
 						"gm", "convert", "-adjoin",
 						"-define", "pdf:use-cropbox=true",
@@ -50,8 +56,9 @@ func gspreviewRoute() api.Route {
 						fmt.Sprintf("%s[0]", inputPath), outputPath,
 					)
 				} else {
+					outputPath = ctx.GeneratePath(".pdf")
 					cmd = exec.CommandContext(context.Background(),
-						"gm", "convert", fmt.Sprintf("%s[0]", inputPath), outputPath,
+						"gm", "convert", inputPath, outputPath,
 					)
 				}
 
