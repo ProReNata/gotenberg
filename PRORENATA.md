@@ -1,7 +1,8 @@
 # Prorenata fork / extensions
 
-- libreoffice route has an option to convert document to plain text. This is specifically made for rtf -> text conversions.
+- libreoffice route has an option to convert document to plain text. Specifically made for rtf -> text conversions.
 - Added route `gspreview` that add conversions by graphicsmagick and ghopstscript
+- Removed `chromium` and `pdftk` (including java) from docker image
 
 ## On branching
 
@@ -22,14 +23,16 @@ Example
 curl --request POST -F files=@test.rtf -F "outputFormat=text" http://localhost:3002/forms/libreoffice/convert -o output.txt
 ```
 
+*Attention:* is not setup to work with multiple files in the request.
+
 ## PDF/Image Conversion with ghostscript and graphicsmagic
 
 Unless specified a pdf is converted to an png-image, all other files are converted to pdf.
 
-Force mode by setting format in request body:
+Force operation by setting output format in request body:
 - outputFormat=<auto, png, pdf> (default=auto)
 
-As with other routes in gotenberg it's possible to convert in batch which will return a zip-archive of all files.
+As with other routes in gotenberg it's possible to convert multiple files in 1 request which will return the result in a zip-archive.
 
 ### convert page 1 of pdf to png
 
