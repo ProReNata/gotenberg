@@ -21,12 +21,16 @@ func gspreviewRoute() api.Route {
 
 			form := ctx.FormData()
 			inputPaths := []string{}
+			outputFormat := ""
 			xsize := 0
-			err := form.AnyMandatoryPaths(&inputPaths).Int("xsize", &xsize, 0).Validate()
+			err := form.AnyMandatoryPaths(&inputPaths).Int("xsize", &xsize, 0).String("outputFormat", &outputFormat, "auto").Validate()
 			if err != nil {
 				return fmt.Errorf("validate form data: %w", err)
 			}
-
+			if outputFormat != "auto" && outputFormat != "png" && outputFormat != "pdf" {
+				formatErrorMsg := "outputFormat must be one of [auto, png, pdf]"
+				return api.WrapError(fmt.Errorf("%s", formatErrorMsg), api.NewSentinelHttpError(http.StatusBadRequest, formatErrorMsg))
+			}
 			sizeArgument := "1200x"
 			if xsize > 0 {
 				sizeArgument = fmt.Sprintf("%dx", xsize)
@@ -34,11 +38,11 @@ func gspreviewRoute() api.Route {
 
 			var outputPaths []string
 			for _, inputPath := range inputPaths {
-				// TODO: option to set conversion mode explicily with input argument?
-				isPDF := strings.HasSuffix(strings.ToLower(inputPath), ".pdf")
+				isPDF := (outputFormat == "auto" && strings.HasSuffix(strings.ToLower(inputPath), ".pdf")) || outputFormat == "png"
 				var outputPath string
 				var cmd *exec.Cmd
 				if isPDF {
+					// "gm" parameters copied from Eketorp
 					outputPath = ctx.GeneratePath(".png")
 					cmd = exec.CommandContext(context.Background(),
 						"gm", "convert", "-adjoin",
