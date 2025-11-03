@@ -33,7 +33,12 @@ RUN go build -o pdfcpu -ldflags "-s -w -X 'main.version=$PDFCPU_VERSION' -X 'git
 # ----------------------------------------------
 FROM golang:$GOLANG_VERSION AS gotenberg-binary-stage
 
-ARG GOTENBERG_VERSION=snapshot
+# TODO/Prorenata: Investigate how to version this.
+#  suggestion is to use the base gotenberg version plus our modifications...
+#  (unknown how the original build tool chain looks... 
+#   but this file sets "snapshot" as default version)
+#ARG GOTENBERG_VERSION=snapshot
+ARG GOTENBERG_VERSION=v8.24.0_prorenata_snaphot
 ENV CGO_ENABLED=0
 
 # Define the working directory outside of $GOPATH (we're using go modules).
