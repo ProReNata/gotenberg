@@ -52,3 +52,15 @@ Example
 ```
 curl --request POST -F "outputFormat=auto" -F files=@test1.tiff http://localhost:3002/forms/gspreview -o output.pdf
 ```
+
+## Docker Compose
+
+Http server: port 3000
+
+For local stress test: `docker compose up --scale gotenberg=16`
+
+### ENV variables of note
+
+- CHROMIUM_DISABLE_ROUTES: (Alreafy disabled in docker images) 
+- API_ENABLE_DEBUG_ROUTE: Enables some debug features. Example: `curl --request GET  http://localhost:3002/debug`
+- GOTENBERG_ENABLE_PROMETHEUS: Enable prometheus
