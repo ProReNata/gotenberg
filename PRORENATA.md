@@ -53,6 +53,28 @@ Example
 curl --request POST -F "outputFormat=auto" -F files=@test1.tiff http://localhost:3002/forms/gspreview -o output.pdf
 ```
 
+## Build/Push image
+
+Set correct GOTENBERG_VERSION (defined in `.env`)
+
+Run build script from gotenberg root path
+`make build`
+
+Creates image on `prorenata/gotenberg:GOTENBERG_VERSION`
+
+(fold this part into a separate script)
+
+Push images (may require use of another Docker user such as `prorenataservice`). 
+Example:
+`docker push prorenata/gotenberg:v8.24.0-prorenata-dev-amd64`
+`docker push prorenata/gotenberg:v8.24.0-prorenata-dev-arm64`
+
+Create multi architecture manifest. 
+Example:
+`docker manifest create  prorenata/gotenberg:v8.24.0-prorenata-dev --amend  prorenata/gotenberg:v8.24.0-prorenata-dev-amd64 --amend prorenata/gotenberg:v8.24.0-prorenata-dev-arm64`
+
+`docker manifest push   prorenata/gotenberg:v8.24.0-prorenata-dev`
+
 ## Docker Compose
 
 Http server: port 3000
