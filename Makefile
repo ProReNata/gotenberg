@@ -6,8 +6,13 @@ help: ## Show the help
 
 .PHONY: build
 build: ## Build the Gotenberg's Docker image
-	docker build --progress=plain \
-	-t $(DOCKER_REGISTRY)/$(DOCKER_REPOSITORY):$(GOTENBERG_VERSION) \
+	docker build --progress=plain --platform linux/arm64 \
+	--build-arg GOTENBERG_VERSION=$(GOTENBERG_VERSION) \
+	-t $(DOCKER_REGISTRY)/$(DOCKER_REPOSITORY):$(GOTENBERG_VERSION)-arm64 \
+	-f $(DOCKERFILE) $(DOCKER_BUILD_CONTEXT)
+	docker build --progress=plain --platform linux/amd64 \
+	--build-arg GOTENBERG_VERSION=$(GOTENBERG_VERSION) \
+	-t $(DOCKER_REGISTRY)/$(DOCKER_REPOSITORY):$(GOTENBERG_VERSION)-amd64 \
 	-f $(DOCKERFILE) $(DOCKER_BUILD_CONTEXT)
 
 GOTENBERG_HIDE_BANNER=false
