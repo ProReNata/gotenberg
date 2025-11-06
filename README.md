@@ -2,13 +2,13 @@
 
 This is a fork of [gotenberg](https://github.com/gotenberg/gotenberg) that changes the following:
 
-- Added option to libreoffice route to convert document to plain text. Specifically made for rtf -> text conversions.
-- Added route `gspreview` that add conversions by graphicsmagick and ghopstscript
-- Removed `chromium` and `pdftk` (including java) from docker image
+- Added option to libreOffice route to convert document to plain text. Specifically made for rtf -> text conversions.
+- Added route `gspreview` that add conversions by GraphicsMagick and ghopstscript
+- Removed `chromium` and `pdftk` (including java) from Docker image
 
 ## On branching
 
-- `main`: Keep `main` branch in sync with the main branch of the source reprository
+- `main`: Keep `main` branch in sync with the main branch of the source repository
 - `dev`: Use as "main" branch for this fork
 
 ## Feature: rtf conversion to text 
@@ -21,11 +21,11 @@ Example
 curl --request POST -F files=@test.rtf -F "outputFormat=text" http://localhost:3002/forms/libreoffice/convert -o output.txt
 ```
 
-*Attention:* is not setup to work with multiple files in the request.
+*Attention:* is not set up to work with multiple files in the request.
 
-## Feature: PDF/Image Conversion with ghostscript and graphicsmagic
+## Feature: PDF/Image Conversion with Ghostscript and GraphicsMagic
 
-Unless specified a pdf is converted to an png-image, all other files are converted to pdf.
+Unless specified a PDF is converted to an png-image, all other files are converted to pdf.
 
 Force operation by setting output format in request body:
 - outputFormat=<auto, png, pdf> (default=auto)
@@ -42,7 +42,7 @@ Example:
 curl --request POST -F "xsize=600" -F "outputFormat=auto" -F files=@test.pdf http://localhost:3002/forms/gspreview -o preview.png
 ```
 
-### Feature: convert image to pdf
+### Feature: convert image to PDF
 
 (takes no extra arguments)
 
@@ -88,7 +88,7 @@ Example:
 
 ## ENV variables of note
 
-- CHROMIUM_DISABLE_ROUTES: (Alreafy disabled in docker images) 
+- CHROMIUM_DISABLE_ROUTES: (Already disabled in docker images) 
 - API_ENABLE_DEBUG_ROUTE: Enables some debug features. Example: `curl --request GET  http://localhost:3002/debug`
 - GOTENBERG_ENABLE_PROMETHEUS: Enable prometheus
 
@@ -100,7 +100,7 @@ Example:
 
 - Project fork documentation
 - Document -> plain text conversion via libreOffice
-- PDF <-> Image conversion via graphicsmagick and ghopstscript
+- PDF <-> Image conversion via GraphicsMagick and Ghostscript
 
 #### Changed
 - Remove pdftk, java and chromium from Docker image
