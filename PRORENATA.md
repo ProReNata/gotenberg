@@ -1,11 +1,10 @@
 # Prorenata fork / extensions
 
-This is a fork of [gotenberg](https://github.com/gotenberg/gotenberg) that adds the following:
+This is a fork of [gotenberg](https://github.com/gotenberg/gotenberg) that changes the following:
 
-- libreoffice route has an option to convert document to plain text. Specifically made for rtf -> text conversions.
+- Added option to libreoffice route to convert document to plain text. Specifically made for rtf -> text conversions.
 - Added route `gspreview` that add conversions by graphicsmagick and ghopstscript
 - Removed `chromium` and `pdftk` (including java) from docker image
-- Added tags to the existing test-runner and excluded tests
 
 ## On branching
 
@@ -75,7 +74,7 @@ Creates image on `prorenata/gotenberg:GOTENBERG_VERSION`
 
 (fold this part into a separate script)
 
-Push images (may require use of another Docker user such as `prorenataservice`). 
+Push images (Not possible on a normal docker user). 
 Example:
 `docker push prorenata/gotenberg:v8.24.0-prorenata-dev-amd64`
 `docker push prorenata/gotenberg:v8.24.0-prorenata-dev-arm64`
@@ -95,15 +94,15 @@ Example:
 
 ## Changelog
 
-[v8.24.0-prorenata-1.0.0] - 2025-11-06
+### [v8.24.0-prorenata-1.0.0] - 2025-11-06
 
-### Added
+#### Added
 
 - Project fork documentation
 - Document -> plain text conversion via libreOffice
 - PDF <-> Image conversion via graphicsmagick and ghopstscript
 
-### Changed
+#### Changed
 - Remove pdftk, java and chromium from Docker image
 - Updated test suite to pass with removed modules
 - Some changes to build scripts 
