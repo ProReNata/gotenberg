@@ -1,19 +1,18 @@
 # Prorenata fork / extensions
 
+This is a fork of [gotenberg](https://github.com/gotenberg/gotenberg) that adds the following:
+
 - libreoffice route has an option to convert document to plain text. Specifically made for rtf -> text conversions.
 - Added route `gspreview` that add conversions by graphicsmagick and ghopstscript
 - Removed `chromium` and `pdftk` (including java) from docker image
+- Added tags to the existing test-runner and excluded tests
 
 ## On branching
-
-(work in progress)
 
 - `main`: Keep `main` branch in sync with the main branch of the source reprository
 - `dev`: Use as "main" branch for this fork
 
-We can probably get away with 1 single branch as a common dev/stable/main/production branch.
-
-## rtf conversion to text 
+## Feature: rtf conversion to text 
 
 Specify text as output in the request body:
 - outputFormat=<pdf, text> (default=pdf)
@@ -25,7 +24,7 @@ curl --request POST -F files=@test.rtf -F "outputFormat=text" http://localhost:3
 
 *Attention:* is not setup to work with multiple files in the request.
 
-## PDF/Image Conversion with ghostscript and graphicsmagic
+## Feature: PDF/Image Conversion with ghostscript and graphicsmagic
 
 Unless specified a pdf is converted to an png-image, all other files are converted to pdf.
 
@@ -44,7 +43,7 @@ Example:
 curl --request POST -F "xsize=600" -F "outputFormat=auto" -F files=@test.pdf http://localhost:3002/forms/gspreview -o preview.png
 ```
 
-### convert image to pdf
+### Feature: convert image to pdf
 
 (takes no extra arguments)
 
@@ -52,6 +51,18 @@ Example
 ```
 curl --request POST -F "outputFormat=auto" -F files=@test1.tiff http://localhost:3002/forms/gspreview -o output.pdf
 ```
+
+## Testing
+
+Testrunner is updated with tags so to not include removed parts
+
+`make test-unit`
+
+`make test-integration`
+
+To only run our integration test
+
+`make test-prorenata`
 
 ## Build/Push image
 
@@ -75,14 +86,24 @@ Example:
 
 `docker manifest push   prorenata/gotenberg:v8.24.0-prorenata-dev`
 
-## Docker Compose
 
-Http server: port 3000
-
-For local stress test: `docker compose up --scale gotenberg=16`
-
-### ENV variables of note
+## ENV variables of note
 
 - CHROMIUM_DISABLE_ROUTES: (Alreafy disabled in docker images) 
 - API_ENABLE_DEBUG_ROUTE: Enables some debug features. Example: `curl --request GET  http://localhost:3002/debug`
 - GOTENBERG_ENABLE_PROMETHEUS: Enable prometheus
+
+## Changelog
+
+[v8.24.0-prorenata-1.0.0] - 2025-11-06
+
+### Added
+
+- Project fork documentation
+- Document -> plain text conversion via libreOffice
+- PDF <-> Image conversion via graphicsmagick and ghopstscript
+
+### Changed
+- Remove pdftk, java and chromium from Docker image
+- Updated test suite to pass with removed modules
+- Some changes to build scripts 
