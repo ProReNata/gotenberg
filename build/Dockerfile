@@ -60,7 +60,7 @@ RUN go build -o gotenberg -ldflags "-s -w -X 'github.com/gotenberg/gotenberg/v8/
 # Custom JRE stage
 # Credits: https://github.com/jodconverter/docker-image-jodconverter-runtime
 # ----------------------------------------------
-# Proreanta: Avoid installing Java runtim at all (This build stage can be removed...)
+# Prorenata: Avoid installing Java runtime at all (This build stage can be removed...)
 FROM debian:13-slim AS custom-jre-stage
 
 # RUN \
