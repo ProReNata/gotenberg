@@ -1,16 +1,24 @@
 package gspreview
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-	"os/exec"
 	"strings"
 
+	"github.com/gotenberg/gotenberg/v8/pkg/gotenberg"
 	"github.com/gotenberg/gotenberg/v8/pkg/modules/api"
 	"github.com/labstack/echo/v4"
 )
 
+/*
+If adding more modules, consider taking a look at this example project
+that extends the PDF engine protocol:
+https://github.com/Vrex123/gotenberg-ghostscript/tree/main
+
+TODO: using a go library that links directly to graphicsmagic libraries
+might give a moderate performance boost.
+Maybe 40% based on testing under python.
+*/
 func gspreviewRoute() api.Route {
 	return api.Route{
 		Method:      http.MethodPost,
@@ -43,27 +51,34 @@ func gspreviewRoute() api.Route {
 			for _, inputPath := range inputPaths {
 				toPng := (outputFormat == "auto" && strings.HasSuffix(strings.ToLower(inputPath), ".pdf")) || outputFormat == "png"
 				var outputPath string
-				var cmd *exec.Cmd
+				var cmd *gotenberg.Cmd
 				if toPng {
 					// "gm" parameters copied from Eketorp 3.80.0
 					outputPath = ctx.GeneratePath(".png")
-					cmd = exec.CommandContext(context.Background(),
-						"gm", "convert", "-adjoin",
+					args := []string{
+						"convert", "-adjoin",
 						"-define", "pdf:use-cropbox=true",
 						"-density", "150",
 						"-resize", sizeArgument,
 						"-quality", "100",
 						fmt.Sprintf("%s[0]", inputPath), outputPath,
-					)
+					}
+					cmd, err = gotenberg.CommandContext(ctx, ctx.Log(), "gm", args...)
 				} else {
 					outputPath = ctx.GeneratePath(".pdf")
-					cmd = exec.CommandContext(context.Background(),
-						"gm", "convert", inputPath, outputPath,
-					)
+					args := []string{
+						"convert",
+						inputPath,
+						outputPath,
+					}
+					cmd, err = gotenberg.CommandContext(ctx, ctx.Log(), "gm", args...)
 				}
-
-				if err := cmd.Run(); err != nil {
-					return fmt.Errorf("failed to generate preview for %s: %w", inputPath, err)
+				if err != nil {
+					return fmt.Errorf("create command: %w", err)
+				}
+				_, err = cmd.Exec()
+				if err != nil {
+					return fmt.Errorf("failed to convert for %s: %w", inputPath, err)
 				}
 
 				outputPaths = append(outputPaths, outputPath)
