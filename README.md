@@ -3,7 +3,7 @@
 This is a fork of [gotenberg](https://github.com/gotenberg/gotenberg) that changes the following:
 
 - Added option to libreOffice route to convert document to plain text. Specifically made for rtf -> text conversions.
-- Added route `gspreview` that add conversions by GraphicsMagick and ghopstscript
+- Added route `gspreview` that add conversions by GraphicsMagick and Ghostscript
 - Removed `chromium` and `pdftk` (including java) from Docker image
 
 ## On branching
