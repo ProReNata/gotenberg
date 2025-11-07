@@ -38,7 +38,7 @@ FROM golang:$GOLANG_VERSION AS gotenberg-binary-stage
 #  (unknown how the original build tool chain looks... 
 #   but this file sets "snapshot" as default version)
 #ARG GOTENBERG_VERSION=snapshot
-ARG GOTENBERG_VERSION=v8.24.0_prorenata_snaphot
+ARG GOTENBERG_VERSION=v8.24.0_prorenata_snapshot
 ENV CGO_ENABLED=0
 
 # Define the working directory outside of $GOPATH (we're using go modules).
