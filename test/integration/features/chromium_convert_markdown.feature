@@ -1,6 +1,7 @@
 # TODO:
 # 1. JavaScript disabled on some feature.
 
+@prorenata_skip
 Feature: /forms/chromium/convert/markdown
 
   Scenario: POST /forms/chromium/convert/markdown (Default)

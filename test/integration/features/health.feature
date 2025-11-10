@@ -14,10 +14,6 @@ Feature: /health
       {
         "status": "up",
         "details": {
-          "chromium": {
-            "status": "up",
-            "timestamp": "ignore"
-          },
           "libreoffice": {
             "status": "up",
             "timestamp": "ignore"

@@ -1,6 +1,7 @@
 # TODO:
 # 1. JavaScript disabled on some feature.
 
+@prorenata_skip
 Feature: /forms/chromium/convert/url
 
   Scenario: POST /forms/chromium/convert/url (Default)

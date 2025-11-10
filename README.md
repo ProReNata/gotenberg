@@ -1,63 +1,108 @@
-<p align="center">
-    <img src="https://user-images.githubusercontent.com/8983173/130322857-185831e2-f041-46eb-a17f-0a69d066c4e5.png" alt="Gotenberg Logo" width="150" height="150" />
-    <h3 align="center">Gotenberg</h3>
-    <p align="center">A containerized API for seamless PDF conversion</p>
-    <p align="center">
-        <a href="https://hub.docker.com/r/gotenberg/gotenberg"><img alt="Total downloads (gotenberg/gotenberg)" src="https://img.shields.io/docker/pulls/gotenberg/gotenberg"></a>
-        <a href="https://hub.docker.com/r/thecodingmachine/gotenberg"><img alt="Total downloads (thecodingmachine/gotenberg)" src="https://img.shields.io/docker/pulls/thecodingmachine/gotenberg"></a>
-        <a href="https://github.com/gotenberg/gotenberg/actions/workflows/continuous-integration.yml"><img alt="Continuous Integration" src="https://github.com/gotenberg/gotenberg/actions/workflows/continuous-integration.yml/badge.svg"></a>
-        <a href="https://pkg.go.dev/github.com/gotenberg/gotenberg/v8"><img alt="Go Reference" src="https://pkg.go.dev/badge/github.com/gotenberg/gotenberg.svg"></a>
-    </p>
-    <p align="center">
-        <a href="https://trendshift.io/repositories/2996"><img src="https://trendshift.io/api/badge/repositories/2996" alt="gotenberg%2Fgotenberg | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-    </p>
-    <p align="center"><a href="https://gotenberg.dev/docs/getting-started/introduction">Documentation</a> &#183; <a href="https://gotenberg.dev/docs/getting-started/installation#live-demo-">Live Demo</a> 🔥</p>
-</p>
+# Prorenata fork / extensions
 
----
+This is a fork of [gotenberg](https://github.com/gotenberg/gotenberg) that changes the following:
 
-**Gotenberg** provides a developer-friendly API to interact with powerful tools like Chromium and LibreOffice for converting
-numerous document formats (HTML, Markdown, Word, Excel, etc.) into PDF files, and more!
+- Added option to libreOffice route to convert document to plain text. Specifically made for rtf -> text conversions.
+- Added route `gspreview` that add conversions by GraphicsMagick and Ghostscript
+- Removed `chromium` and `pdftk` (including java) from Docker image
 
-## Quick Start
+## On branching
 
-Open a terminal and run the following command:
+- `main`: Keep `main` branch in sync with the main branch of the source repository
+- `dev`: Use as "main" branch for this fork
 
+## Feature: rtf conversion to text 
+
+Specify text as output in the request body:
+- outputFormat=<pdf, text> (default=pdf)
+
+Example
 ```
-docker run --rm -p 3000:3000 gotenberg/gotenberg:8
+curl --request POST -F files=@test.rtf -F "outputFormat=text" http://localhost:3002/forms/libreoffice/convert -o output.txt
 ```
 
-Alternatively, using the historic Docker repository from our sponsor [TheCodingMachine](https://www.thecodingmachine.com):
+*Attention:* is not set up to work with multiple files in the request.
 
+## Feature: PDF/Image Conversion with Ghostscript and GraphicsMagic
+
+Unless specified a PDF is converted to an png-image, all other files are converted to pdf.
+
+Force operation by setting output format in request body:
+- outputFormat=<auto, png, pdf> (default=auto)
+
+As with other routes in gotenberg it's possible to convert multiple files in 1 request which will return the result in a zip-archive.
+
+### convert page 1 of pdf to png
+
+Specify x dimension (pixels) in request body:
+- xsize=<pixels> (default 1200 pixels)
+
+Example:
 ```
-docker run --rm -p 3000:3000 thecodingmachine/gotenberg:8
+curl --request POST -F "xsize=600" -F "outputFormat=auto" -F files=@test.pdf http://localhost:3002/forms/gspreview -o preview.png
 ```
 
-The API is now available on your host at http://localhost:3000.
+### Feature: convert image to PDF
 
-Head to the [documentation](https://gotenberg.dev/docs/getting-started/introduction) to learn how to interact with it 🚀
+(takes no extra arguments)
 
-## Sponsors
+Example
+```
+curl --request POST -F "outputFormat=auto" -F files=@test1.tiff http://localhost:3002/forms/gspreview -o output.pdf
+```
 
-<p align="center">
-    <a href="https://thecodingmachine.com">
-        <img src="https://user-images.githubusercontent.com/8983173/130324668-9d6e7b35-53a3-49c7-a574-38190d2bd6b0.png" alt="TheCodingMachine Logo" width="333" height="163" />
-    </a>
-    <a href="https://pdfme.com?utm_source=gotenberg_github&utm_medium=website" target="_blank">
-        <img src="https://github.com/user-attachments/assets/2a75dd40-ca18-4d34-acd5-5dd474595168" alt="pdfme Logo" width="333" height="163" />
-    </a>
-</p>
+## Testing
 
-Sponsorships help maintain and improve Gotenberg - [become a sponsor](https://github.com/sponsors/gulien) ❤️
+Testrunner is updated with tags so to not include removed parts
 
----
+`make test-unit`
 
-<p align="center">
-  <strong>Powered by</strong>
-</p>
+`make test-integration`
 
-<p align="center">
-  <a href="https://jb.gg/OpenSource">
-    <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg" alt="JetBrains logo" width="200"/>
-  </a>
-</p>
+To only run our integration test
+
+`make test-prorenata`
+
+## Build/Push image
+
+Set correct GOTENBERG_VERSION (defined in `.env`)
+
+Run build script from gotenberg root path
+`make build`
+
+Creates image on `prorenata/gotenberg:GOTENBERG_VERSION`
+
+(fold this part into a separate script)
+
+Push images (Not possible on a normal docker user). 
+Example:
+`docker push prorenata/gotenberg:v8.24.0-prorenata-dev-amd64`
+`docker push prorenata/gotenberg:v8.24.0-prorenata-dev-arm64`
+
+Create multi architecture manifest. 
+Example:
+`docker manifest create  prorenata/gotenberg:v8.24.0-prorenata-dev --amend  prorenata/gotenberg:v8.24.0-prorenata-dev-amd64 --amend prorenata/gotenberg:v8.24.0-prorenata-dev-arm64`
+
+`docker manifest push   prorenata/gotenberg:v8.24.0-prorenata-dev`
+
+
+## ENV variables of note
+
+- CHROMIUM_DISABLE_ROUTES: (Already disabled in docker images) 
+- API_ENABLE_DEBUG_ROUTE: Enables some debug features. Example: `curl --request GET  http://localhost:3002/debug`
+- GOTENBERG_ENABLE_PROMETHEUS: Enable prometheus
+
+## Changelog
+
+### [v8.24.0-prorenata-1.0.0] - 2025-11-06
+
+#### Added
+
+- Project fork documentation
+- Document -> plain text conversion via libreOffice
+- PDF <-> Image conversion via GraphicsMagick and Ghostscript
+
+#### Changed
+- Remove pdftk, java and chromium from Docker image
+- Updated test suite to pass with removed modules
+- Some changes to build scripts 

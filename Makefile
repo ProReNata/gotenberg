@@ -6,8 +6,13 @@ help: ## Show the help
 
 .PHONY: build
 build: ## Build the Gotenberg's Docker image
-	docker build \
-	-t $(DOCKER_REGISTRY)/$(DOCKER_REPOSITORY):$(GOTENBERG_VERSION) \
+	docker build --progress=plain --platform linux/arm64 \
+	--build-arg GOTENBERG_VERSION=$(GOTENBERG_VERSION) \
+	-t $(DOCKER_REGISTRY)/$(DOCKER_REPOSITORY):$(GOTENBERG_VERSION)-arm64 \
+	-f $(DOCKERFILE) $(DOCKER_BUILD_CONTEXT)
+	docker build --progress=plain --platform linux/amd64 \
+	--build-arg GOTENBERG_VERSION=$(GOTENBERG_VERSION) \
+	-t $(DOCKER_REGISTRY)/$(DOCKER_REPOSITORY):$(GOTENBERG_VERSION)-amd64 \
 	-f $(DOCKERFILE) $(DOCKER_BUILD_CONTEXT)
 
 GOTENBERG_HIDE_BANNER=false
@@ -45,7 +50,7 @@ CHROMIUM_DENY_LIST=^file:(?!//\/tmp/).*
 CHROMIUM_CLEAR_CACHE=false
 CHROMIUM_CLEAR_COOKIES=false
 CHROMIUM_DISABLE_JAVASCRIPT=false
-CHROMIUM_DISABLE_ROUTES=false
+CHROMIUM_DISABLE_ROUTES=true
 LIBREOFFICE_RESTART_AFTER=10
 LIBREOFFICE_MAX_QUEUE_SIZE=0
 LIBREOFFICE_AUTO_START=false
@@ -55,13 +60,13 @@ LOG_LEVEL=info
 LOG_FORMAT=auto
 LOG_FIELDS_PREFIX=
 LOG_ENABLE_GCP_FIELDS=false
-PDFENGINES_MERGE_ENGINES=qpdf,pdfcpu,pdftk
-PDFENGINES_SPLIT_ENGINES=pdfcpu,qpdf,pdftk
+PDFENGINES_MERGE_ENGINES=qpdf,pdfcpu
+PDFENGINES_SPLIT_ENGINES=pdfcpu,qpdf
 PDFENGINES_FLATTEN_ENGINES=qpdf
 PDFENGINES_CONVERT_ENGINES=libreoffice-pdfengine
 PDFENGINES_READ_METADATA_ENGINES=exiftool
 PDFENGINES_WRITE_METADATA_ENGINES=exiftool
-PDFENGINES_ENCRYPT_ENGINES=qpdf,pdfcpu,pdftk
+PDFENGINES_ENCRYPT_ENGINES=qpdf,pdfcpu
 PDFENGINES_DISABLE_ROUTES=false
 PROMETHEUS_NAMESPACE=gotenberg
 PROMETHEUS_COLLECT_INTERVAL=1s
@@ -161,7 +166,15 @@ NO_CONCURRENCY=false
 
 .PHONY: test-integration
 test-integration: ## Run integration tests
-	go test -timeout 40m -tags=integration -v github.com/gotenberg/gotenberg/v8/test/integration -args \
+	GODOG_TAGS="~@prorenata_skip" go test -timeout 40m -tags=integration -v github.com/gotenberg/gotenberg/v8/test/integration -args \
+	--gotenberg-docker-repository=$(DOCKER_REPOSITORY) \
+	--gotenberg-version=$(GOTENBERG_VERSION) \
+ 	--gotenberg-container-platform=$(PLATFORM) \
+ 	--no-concurrency=$(NO_CONCURRENCY)
+
+.PHONY: test-prorenata
+test-prorenata: ## Run Prorenata integration tests ONLY
+	GODOG_TAGS="@prorenata" go test -timeout 40m -tags=integration -v github.com/gotenberg/gotenberg/v8/test/integration -args \
 	--gotenberg-docker-repository=$(DOCKER_REPOSITORY) \
 	--gotenberg-version=$(GOTENBERG_VERSION) \
  	--gotenberg-container-platform=$(PLATFORM) \

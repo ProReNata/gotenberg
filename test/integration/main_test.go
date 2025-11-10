@@ -47,6 +47,7 @@ func TestMain(m *testing.M) {
 			Paths:       []string{"features"},
 			Output:      colors.Colored(os.Stdout),
 			Concurrency: concurrency,
+			Tags:        os.Getenv("GODOG_TAGS"),
 		},
 	}.Run()
 

@@ -526,3 +526,37 @@ func (form *FormData) readFile(path, filename string, target *string) *FormData 
 
 	return form
 }
+
+// Prorenata:
+// added method to bind paths regardless of file extensions.
+// At least 1 file must be specified
+//
+//	var paths []string
+//
+//	ctx.FormData().AnyMandatoryPaths(&paths)
+func (form *FormData) AnyMandatoryPaths(target *[]string) *FormData {
+	form.anyPaths(target)
+
+	if len(*target) > 0 {
+		return form
+	}
+
+	form.append(
+		fmt.Errorf("no form file found"),
+	)
+
+	return form
+}
+
+// Prorenata:
+// func paths() excluding the extension check
+func (form *FormData) anyPaths(target *[]string) *FormData {
+	for _, path := range form.files {
+		*target = append(*target, path)
+	}
+
+	// Comment for original paths(): https://github.com/gotenberg/gotenberg/issues/139.
+	sort.Sort(gotenberg.AlphanumericSort(*target))
+
+	return form
+}

@@ -1,6 +1,7 @@
 # TODO:
 # 1. PDF/UA-2.
 
+@prorenata_skip
 Feature: /forms/pdfengines/convert
 
   Scenario: POST /forms/pdfengines/convert (Single PDF/A-1b)
