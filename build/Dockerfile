@@ -33,9 +33,38 @@ RUN go build -o pdfcpu -ldflags "-s -w -X 'main.version=$PDFCPU_VERSION' -X 'git
 # ----------------------------------------------
 FROM golang:$GOLANG_VERSION AS gotenberg-binary-stage
 
-#ARG GOTENBERG_VERSION=snapshot
 ARG GOTENBERG_VERSION=v8.24.0_prorenata_snapshot
-ENV CGO_ENABLED=0
+ENV CGO_ENABLED=1
+
+# Prorenata: install pdfium 
+# Download pre-built binaries and dynamically link to the goteberg binary
+# See https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F7643/pdfium-linux-arm64.tgz
+ARG TARGETARCH
+ARG PDFIUM_CHROMIUM_VERSION=7643
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        PDFIUM_ARCH="x64"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        PDFIUM_ARCH="arm64"; \
+    else \
+        echo "Unsupported architecture: $TARGETARCH"; exit 1; \
+    fi && \
+    curl -sSL -o pdfium.tgz "https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F${PDFIUM_CHROMIUM_VERSION}/pdfium-linux-${PDFIUM_ARCH}.tgz" && \
+    mkdir -p /opt/pdfium && \
+    tar -xvf pdfium.tgz -C /opt/pdfium
+
+# Setup pkgconfig (See go-pdfium documentation)
+RUN mkdir -p /usr/local/lib/pkgconfig
+RUN echo "prefix=/opt/pdfium\n\
+libdir=\${prefix}/lib\n\
+includedir=\${prefix}/include\n\
+\n\
+Name: pdfium\n\
+Description: PDFium library\n\
+Version: ${PDFIUM_CHROMIUM_VERSION}\n\
+Cflags: -I\${includedir}\n\
+Libs: -L\${libdir} -lpdfium" > /usr/local/lib/pkgconfig/pdfium.pc
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+
 
 # Define the working directory outside of $GOPATH (we're using go modules).
 WORKDIR /home
@@ -227,8 +256,6 @@ RUN \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Prorenata: exclude pdftk from image (avoid Java runtime...)
-# Prorenata: add ghostscript
-# Prorenata: add graphicsmagic (gives more control over preview generator)
 RUN \
     # Install PDFtk, QPDF & ExifTool (PDF engines).
     # See https://github.com/gotenberg/gotenberg/pull/273.
@@ -238,7 +265,7 @@ RUN \
     # chmod +x /usr/bin/pdftk &&\
     apt-get update -qq &&\
     apt-get upgrade -yqq &&\
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends qpdf exiftool ghostscript graphicsmagick &&\
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends qpdf exiftool &&\
     # See https://github.com/nextcloud/docker/issues/380.
     mkdir -p /usr/share/man/man1 &&\
     # Verify installations.
@@ -270,6 +297,10 @@ COPY --chown=gotenberg:gotenberg build/chromium-hyphen-data /opt/gotenberg/chrom
 # Copy the Golang binaries.
 COPY --from=pdfcpu-binary-stage /home/pdfcpu /usr/bin/
 COPY --from=gotenberg-binary-stage /home/gotenberg /usr/bin/
+
+# Copy pdfium library
+COPY --from=gotenberg-binary-stage /opt/pdfium/lib/libpdfium.so /usr/local/lib/libpdfium.so
+RUN ldconfig
 
 # Environment variables required by modules or else.
 ENV CHROMIUM_BIN_PATH=/usr/bin/chromium
