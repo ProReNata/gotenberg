@@ -3,8 +3,8 @@
 This is a fork of [gotenberg](https://github.com/gotenberg/gotenberg) that changes the following:
 
 - Added option to libreOffice route to convert document to plain text. Specifically made for rtf -> text conversions.
-- Added route `gspreview` that add conversions by GraphicsMagick and Ghostscript
-- Removed `chromium` and `pdftk` (including java) from Docker image
+- Added route `gspreview` that add conversions by pdfium and gofpdf.
+- Removed `chromium` and `pdftk` (including java) from Docker image.
 
 ## On branching
 
@@ -93,6 +93,17 @@ Example:
 - GOTENBERG_ENABLE_PROMETHEUS: Enable prometheus
 
 ## Changelog
+
+### [v8.24.0-prorenata-1.1.0] - 2026-01-26
+
+#### Changed
+- Now uses go-pdfium for PDF -> png (using prebuild pdfium library)
+- Now uses gofpdf for image -> PDF (known support: tiff, png, bmp, jpg, webp). 
+
+#### Removed
+- Removed ghostscript from image
+- Removed graphicsmagick from image
+
 
 ### [v8.24.0-prorenata-1.0.0] - 2025-11-06
 
