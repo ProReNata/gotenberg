@@ -1,136 +1,136 @@
 package gspreview
 
 import (
+	"bytes"
 	"fmt"
+	"image"
 	"image/png"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/gotenberg/gotenberg/v8/pkg/gotenberg"
 	"github.com/gotenberg/gotenberg/v8/pkg/modules/api"
-	"github.com/klippa-app/go-pdfium"
 	"github.com/klippa-app/go-pdfium/requests"
 	"github.com/labstack/echo/v4"
+
+	_ "image/jpeg"
+	_ "image/png"
+
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
+	_ "golang.org/x/image/webp"
+
+	"github.com/jung-kurt/gofpdf"
 )
 
 /*
 PDF to PNG conversion via pdfium
 */
-func RenderPdfFileToPng1200px(inputPath string, outputPath string, instance pdfium.Pdfium) error {
-	/*
-		instance, err := pool.GetInstance(0)
-		if err != nil {
-			return err
-		}
-		defer instance.Close()
-	*/
-	if instance == nil {
-		return fmt.Errorf("CRITICAL: instance is nil before LoadDocument")
-	}
-	fmt.Fprintln(os.Stdout, "--- DEBUG: RenderPdfFileToPng1200px anropad med input: %s , ouput: %s---\n", inputPath, outputPath)
+func RenderPdfFileToPng(m *Module, inputPath string, outputPath string, width int) error {
+	// Mutext because c-bindings are not thread-safe
+	m.pdfiumMutex.Lock()
+	defer m.pdfiumMutex.Unlock()
 
-	fmt.Println(os.Stdout, "Read in go domain")
-
-	pdfBytes, err := os.ReadFile(inputPath)
-	if err != nil {
-		return err
-	}
-	fmt.Println(os.Stdout, "Read in c domain")
-
-	fmt.Println(os.Stdout, "Load from pdfium")
-
-	doc, err := instance.OpenDocument(&requests.OpenDocument{
-		File: &pdfBytes,
+	doc, err := m.pdfiumInstance.OpenDocument(&requests.OpenDocument{
+		FilePath: &inputPath,
 	})
 	if err != nil {
-		fmt.Println(os.Stdout, "Open doc failed")
-		fmt.Fprintln(os.Stdout, "%v", err)
-		return err
+		return fmt.Errorf("Error opening document: %w", err)
 	}
+	defer m.pdfiumInstance.FPDF_CloseDocument(&requests.FPDF_CloseDocument{
+		Document: doc.Document,
+	})
 
-	fmt.Println(os.Stdout, "Render from pdfium")
-	render, err := instance.RenderPageInPixels(&requests.RenderPageInPixels{
+	render, err := m.pdfiumInstance.RenderPageInPixels(&requests.RenderPageInPixels{
 		Page: requests.Page{
 			ByIndex: &requests.PageByIndex{
 				Document: doc.Document,
 				Index:    0,
 			},
 		},
-		Width:  1200,
-		Height: 0,
+		Width:      width,
+		Height:     0,
+		RenderForm: true,
 	})
 	if err != nil {
-		fmt.Println(os.Stdout, "Render from pdfium FAILED")
-		fmt.Fprintln(os.Stdout, "%v", err)
-		return err
+		return fmt.Errorf("Render fail: %w", err)
 	}
-	fmt.Println(os.Stdout, "Render from pdfium DONE")
 
-	if render.Result.Image == nil {
-		fmt.Println(os.Stdout, "redner.Result.Image is NULL")
-	}
 	outfile, err := os.Create(outputPath)
 	if err != nil {
-		fmt.Println("Error writing to dummt file")
-		return err
+		return fmt.Errorf("Faile to create file: %w", err)
 	}
-	fmt.Println(os.Stdout, "Try png encoding")
+	defer outfile.Close()
 	err = png.Encode(outfile, render.Result.Image)
 	if err != nil {
-		fmt.Println("Error with png encoding")
-		return err
+		return fmt.Errorf("Error in png encoding: %w", err)
 	}
-	//_, err = outfile.Write(pdfBytes)
-	outfile.Close()
 
-	fmt.Println(os.Stdout, "function exit")
-
+	fmt.Println("CONVERSION DONE!") // REMOVE: check that the code is running
 	return nil
-	/*
-		doc, err := instance.OpenDocument(&requests.OpenDocument{
-			File: &pdfBytes,
-		})
+}
+
+/*
+Callback for generating a png
+*/
+func imageToPNG(img image.Image) *bytes.Buffer {
+	buf := new(bytes.Buffer)
+	_ = png.Encode(buf, img)
+	return buf
+}
+
+/*
+Convert image to single page pdf using fpdf
+*/
+func ConvertImageToPdf(inputPath string, outputPath string) error {
+	file, err := os.Open(inputPath)
+	if err != nil {
+		return fmt.Errorf("Error reading file: %w", err)
+	}
+	defer file.Close()
+
+	imgConfig, format, err := image.DecodeConfig(file)
+	if err != nil {
+		return fmt.Errorf("Error readin image header: %w", err)
+	}
+
+	// Create new empty pdf
+	pdf := gofpdf.NewCustom(&gofpdf.InitType{
+		UnitStr: "pt",
+		Size: gofpdf.SizeType{
+			Wd: float64(imgConfig.Width),
+			Ht: float64(imgConfig.Height),
+		},
+	})
+	pdf.AddPage()
+
+	if format == "jpeg" || format == "png" {
+		// use fpdf passthrough for supported formats
+		pdf.Image(inputPath, 0, 0, float64(imgConfig.Width), float64(imgConfig.Height), false, "", 0, "")
+	} else {
+		// Re-encode to png for bmp/tiff/webp
+		file.Seek(0, 0)
+		img, _, err := image.Decode(file)
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to decode %s: %w", format, err)
 		}
-		fmt.Print("Load Document")
-		defer instance.FPDF_CloseDocument(&requests.FPDF_CloseDocument{
-			Document: doc.Document,
-		})
-		fmt.Print("(defer Close Document")
-		render, err := instance.RenderPageInPixels(&requests.RenderPageInPixels{
-			Document: &doc.Document,
-			Page: requests.Page{
-				ByIndex: &requests.PageByIndex{
-					Index: 0,
-				},
-			},
-			Width:  1200,
-			Height: 0,
-		})
-		if err != nil {
-			return err
-		}
-		fmt.Print("Render Page")
-		outfile, err := os.Create(outputPath)
-		if err != nil {
-			return err
-		}
-		err = png.Encode(outfile, render.Result.Image)
-		fmt.Print("Write to PNG file")
-		return nil
-	*/
+
+		opts := gofpdf.ImageOptions{ImageType: "PNG", ReadDpi: true}
+		pdf.RegisterImageOptionsReader("img", opts, imageToPNG(img))
+		pdf.ImageOptions("img", 0, 0, float64(imgConfig.Width), float64(imgConfig.Height), false, opts, 0, "")
+	}
+
+	if pdf.Error() != nil {
+		return fmt.Errorf("Error in PDF generation: %w", pdf.Error())
+	}
+
+	return pdf.OutputFileAndClose(outputPath)
 }
 
 /*
 If adding more modules, consider taking a look at this example project
 that extends the PDF engine protocol:
 https://github.com/Vrex123/gotenberg-ghostscript/tree/main
-
-TODO: using a go library that links directly to graphicsmagic libraries
-might give a moderate performance boost.
-Maybe 40% based on testing under python.
 */
 func gspreviewRoute(m *Module) api.Route {
 	return api.Route{
@@ -143,8 +143,8 @@ func gspreviewRoute(m *Module) api.Route {
 			form := ctx.FormData()
 			inputPaths := []string{}
 			outputFormat := ""
-			xsize := 0
-			err := form.AnyMandatoryPaths(&inputPaths).Int("xsize", &xsize, 0).String("outputFormat", &outputFormat, "auto").Validate()
+			xsize := 1200
+			err := form.AnyMandatoryPaths(&inputPaths).Int("xsize", &xsize, 1200).String("outputFormat", &outputFormat, "auto").Validate()
 			if err != nil {
 				return fmt.Errorf("validate form data: %w", err)
 			}
@@ -155,51 +155,22 @@ func gspreviewRoute(m *Module) api.Route {
 					api.NewSentinelHttpError(http.StatusBadRequest, formatErrorMsg),
 				)
 			}
-			/*
-				sizeArgument := "1200x"
-				if xsize > 0 {
-					sizeArgument = fmt.Sprintf("%dx", xsize)
-				}
-			*/
+
 			var outputPaths []string
 			for _, inputPath := range inputPaths {
 				toPng := (outputFormat == "auto" && strings.HasSuffix(strings.ToLower(inputPath), ".pdf")) || outputFormat == "png"
 				var outputPath string
-				var cmd *gotenberg.Cmd
 				if toPng {
-					// "gm" parameters copied from Eketorp 3.80.0
-					/*
-						outputPath = ctx.GeneratePath(".png")
-						args := []string{
-							"convert", "-adjoin",
-							"-define", "pdf:use-cropbox=true",
-							"-density", "150",
-							"-resize", sizeArgument,
-							"-quality", "100",
-							fmt.Sprintf("%s[0]", inputPath), outputPath,
-						}
-						cmd, err = gotenberg.CommandContext(ctx, ctx.Log(), "gm", args...)
-					*/
 					outputPath = ctx.GeneratePath(".png")
-					err = RenderPdfFileToPng1200px(inputPath, outputPath, m.pdfiumInstance)
+					err = RenderPdfFileToPng(m, inputPath, outputPath, xsize)
 					if err != nil {
-						return fmt.Errorf("failed to convert for %s: %w", inputPath, err)
+						return fmt.Errorf("Error pdf->png: %s: %w", inputPath, err)
 					}
 				} else {
 					outputPath = ctx.GeneratePath(".pdf")
-					args := []string{
-						"convert",
-						inputPath,
-						outputPath,
-					}
-					cmd, err = gotenberg.CommandContext(ctx, ctx.Log(), "gm", args...)
-
+					err = ConvertImageToPdf(inputPath, outputPath)
 					if err != nil {
-						return fmt.Errorf("create command: %w", err)
-					}
-					_, err = cmd.Exec()
-					if err != nil {
-						return fmt.Errorf("failed to convert for %s: %w", inputPath, err)
+						return fmt.Errorf("Error image->pdf: %s: %w", inputPath, err)
 					}
 				}
 				outputPaths = append(outputPaths, outputPath)

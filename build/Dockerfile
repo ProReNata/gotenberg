@@ -12,7 +12,7 @@ FROM golang:$GOLANG_VERSION AS pdfcpu-binary-stage
 
 # See https://github.com/pdfcpu/pdfcpu/releases.
 ARG PDFCPU_VERSION=v0.11.1
-ENV CGO_ENABLED=1
+ENV CGO_ENABLED=0
 
 # Define the working directory outside of $GOPATH (we're using go modules).
 WORKDIR /home
@@ -33,19 +33,26 @@ RUN go build -o pdfcpu -ldflags "-s -w -X 'main.version=$PDFCPU_VERSION' -X 'git
 # ----------------------------------------------
 FROM golang:$GOLANG_VERSION AS gotenberg-binary-stage
 
+ARG GOTENBERG_VERSION=v8.24.0_prorenata_snapshot
+ENV CGO_ENABLED=1
+
 # Prorenata: install pdfium 
-# https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F7643/pdfium-linux-arm64.tgz
+# Download pre-built binaries and dynamically link to the goteberg binary
+# See https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F7643/pdfium-linux-arm64.tgz
 ARG TARGETARCH
 ARG PDFIUM_CHROMIUM_VERSION=7643
-# RUN curl -sSL -o pdfium.tgz "https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F${PDFIUM_CHROMIUM_VERSION}/pdfium-linux-${TARGETARCH}.tgz" && \
-#     mkdir -p /opt/pdfium && \
-#     tar -xvf pdfium.tgz -C /opt/pdfium
-RUN PDFIUM_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64") && \
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        PDFIUM_ARCH="x64"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        PDFIUM_ARCH="arm64"; \
+    else \
+        echo "Unsupported architecture: $TARGETARCH"; exit 1; \
+    fi && \
     curl -sSL -o pdfium.tgz "https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F${PDFIUM_CHROMIUM_VERSION}/pdfium-linux-${PDFIUM_ARCH}.tgz" && \
     mkdir -p /opt/pdfium && \
     tar -xvf pdfium.tgz -C /opt/pdfium
 
-# Setup pkgconfig
+# Setup pkgconfig (See go-pdfium documentation)
 RUN mkdir -p /usr/local/lib/pkgconfig
 RUN echo "prefix=/opt/pdfium\n\
 libdir=\${prefix}/lib\n\
@@ -53,17 +60,11 @@ includedir=\${prefix}/include\n\
 \n\
 Name: pdfium\n\
 Description: PDFium library\n\
-Version: 7643\n\
+Version: ${PDFIUM_CHROMIUM_VERSION}\n\
 Cflags: -I\${includedir}\n\
 Libs: -L\${libdir} -lpdfium" > /usr/local/lib/pkgconfig/pdfium.pc
-
-# Sätt miljövariabeln så Go hittar filen
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
-
-#ARG GOTENBERG_VERSION=snapshot
-ARG GOTENBERG_VERSION=v8.24.0_prorenata_snapshot
-ENV CGO_ENABLED=1
 
 # Define the working directory outside of $GOPATH (we're using go modules).
 WORKDIR /home
@@ -79,8 +80,7 @@ COPY cmd ./cmd
 COPY pkg ./pkg
 
 RUN go build -o gotenberg -ldflags "-s -w -X 'github.com/gotenberg/gotenberg/v8/cmd.Version=$GOTENBERG_VERSION'" cmd/gotenberg/main.go
-# Did the linking go as planned???
-RUN ldd gotenberg
+
 # ----------------------------------------------
 # Custom JRE stage
 # Credits: https://github.com/jodconverter/docker-image-jodconverter-runtime
@@ -145,10 +145,9 @@ RUN \
 RUN \
     # Install system dependencies required for the next instructions or debugging.
     # Note: tini is a helper for reaping zombie processes.
-    # Prorenata: Added python-pip python-venv (for pypdfium2)
     apt-get update -qq &&\
     apt-get upgrade -yqq &&\
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends curl gnupg tini python3 python3-distutils-extra python3-pip python3-venv &&\
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends curl gnupg tini python3 python3-distutils-extra &&\
     # Cleanup.
     # Note: the Debian image does automatically a clean after each install thanks to a hook.
     # Therefore, there is no need for apt-get clean.
@@ -256,20 +255,7 @@ RUN \
     # Cleanup.
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Prorenata: install/copy pdfium-cli binaries
-#ARG PDFIUM_VERSION=0.9.8
-#ARG TARGETARCH
-#RUN curl -Ls -o /usr/local/bin/pdfium "https://github.com/klippa-app/pdfium-cli/releases/download/v${PDFIUM_VERSION}/pdfium-native-linux-${TARGETARCH}" && \
-#    chmod +x /usr/local/bin/pdfium
-# pdfium binaries here : https://github.com/bblanchon/pdfium-binaries/releases
-# Prorenata: install pypdfium2 (and pdfium)
-#RUN python3 -m venv /opt/venv
-#ENV PATH="/opt/venv/bin:$PATH"
-#RUN pip install --no-cache-dir pypdfium2
-
-
 # Prorenata: exclude pdftk from image (avoid Java runtime...)
-# Prorenata: add graphicsmagic (gives more control over preview generator)
 RUN \
     # Install PDFtk, QPDF & ExifTool (PDF engines).
     # See https://github.com/gotenberg/gotenberg/pull/273.
@@ -279,7 +265,7 @@ RUN \
     # chmod +x /usr/bin/pdftk &&\
     apt-get update -qq &&\
     apt-get upgrade -yqq &&\
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends qpdf exiftool graphicsmagick &&\
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends qpdf exiftool &&\
     # See https://github.com/nextcloud/docker/issues/380.
     mkdir -p /usr/share/man/man1 &&\
     # Verify installations.

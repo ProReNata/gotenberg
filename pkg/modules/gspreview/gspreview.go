@@ -2,7 +2,7 @@ package gspreview
 
 import (
 	"context"
-	"fmt"
+	"sync"
 	"time"
 
 	"github.com/gotenberg/gotenberg/v8/pkg/gotenberg"
@@ -16,8 +16,8 @@ func init() {
 }
 
 type Module struct {
-	pool           pdfium.Pool
 	pdfiumInstance pdfium.Pdfium
+	pdfiumMutex    sync.Mutex
 }
 
 func (m *Module) Descriptor() gotenberg.ModuleDescriptor {
@@ -38,28 +38,16 @@ func (m *Module) Routes() ([]api.Route, error) {
 }
 
 func (m *Module) Start() error {
-	/*
-		m.pool = multi_threaded.Init(multi_threaded.Config{
-			MaxTotal: 3,
-		})
-	*/
-	m.pool = single_threaded.Init(single_threaded.Config{})
 	var err error
-	m.pdfiumInstance, err = m.pool.GetInstance(time.Second * 30)
-	if err != nil {
-		return err
-	}
-	fmt.Print("Initialized pdfium instance?")
-	return nil
+	pool := single_threaded.Init(single_threaded.Config{})
+	m.pdfiumInstance, err = pool.GetInstance(time.Second * 10)
+	return err
 }
 
-func (m *Module) Stop(ctx context.Context) error {
-	return nil
-}
+func (m *Module) Stop(ctx context.Context) error { return nil }
 
-// StartupMessage returns a custom startup message.
 func (m *Module) StartupMessage() string {
-	return "Starting gspreview / (pdfium-bindings)"
+	return "Starting gspreview (pdfium-bindings)"
 }
 
 var (
