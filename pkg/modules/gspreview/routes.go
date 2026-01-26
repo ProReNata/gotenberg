@@ -2,13 +2,126 @@ package gspreview
 
 import (
 	"fmt"
+	"image/png"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gotenberg/gotenberg/v8/pkg/gotenberg"
 	"github.com/gotenberg/gotenberg/v8/pkg/modules/api"
+	"github.com/klippa-app/go-pdfium"
+	"github.com/klippa-app/go-pdfium/requests"
 	"github.com/labstack/echo/v4"
 )
+
+/*
+PDF to PNG conversion via pdfium
+*/
+func RenderPdfFileToPng1200px(inputPath string, outputPath string, instance pdfium.Pdfium) error {
+	/*
+		instance, err := pool.GetInstance(0)
+		if err != nil {
+			return err
+		}
+		defer instance.Close()
+	*/
+	if instance == nil {
+		return fmt.Errorf("CRITICAL: instance is nil before LoadDocument")
+	}
+	fmt.Fprintln(os.Stdout, "--- DEBUG: RenderPdfFileToPng1200px anropad med input: %s , ouput: %s---\n", inputPath, outputPath)
+
+	fmt.Println(os.Stdout, "Read in go domain")
+
+	pdfBytes, err := os.ReadFile(inputPath)
+	if err != nil {
+		return err
+	}
+	fmt.Println(os.Stdout, "Read in c domain")
+
+	fmt.Println(os.Stdout, "Load from pdfium")
+
+	doc, err := instance.OpenDocument(&requests.OpenDocument{
+		File: &pdfBytes,
+	})
+	if err != nil {
+		fmt.Println(os.Stdout, "Open doc failed")
+		fmt.Fprintln(os.Stdout, "%v", err)
+		return err
+	}
+
+	fmt.Println(os.Stdout, "Render from pdfium")
+	render, err := instance.RenderPageInPixels(&requests.RenderPageInPixels{
+		Page: requests.Page{
+			ByIndex: &requests.PageByIndex{
+				Document: doc.Document,
+				Index:    0,
+			},
+		},
+		Width:  1200,
+		Height: 0,
+	})
+	if err != nil {
+		fmt.Println(os.Stdout, "Render from pdfium FAILED")
+		fmt.Fprintln(os.Stdout, "%v", err)
+		return err
+	}
+	fmt.Println(os.Stdout, "Render from pdfium DONE")
+
+	if render.Result.Image == nil {
+		fmt.Println(os.Stdout, "redner.Result.Image is NULL")
+	}
+	outfile, err := os.Create(outputPath)
+	if err != nil {
+		fmt.Println("Error writing to dummt file")
+		return err
+	}
+	fmt.Println(os.Stdout, "Try png encoding")
+	err = png.Encode(outfile, render.Result.Image)
+	if err != nil {
+		fmt.Println("Error with png encoding")
+		return err
+	}
+	//_, err = outfile.Write(pdfBytes)
+	outfile.Close()
+
+	fmt.Println(os.Stdout, "function exit")
+
+	return nil
+	/*
+		doc, err := instance.OpenDocument(&requests.OpenDocument{
+			File: &pdfBytes,
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Print("Load Document")
+		defer instance.FPDF_CloseDocument(&requests.FPDF_CloseDocument{
+			Document: doc.Document,
+		})
+		fmt.Print("(defer Close Document")
+		render, err := instance.RenderPageInPixels(&requests.RenderPageInPixels{
+			Document: &doc.Document,
+			Page: requests.Page{
+				ByIndex: &requests.PageByIndex{
+					Index: 0,
+				},
+			},
+			Width:  1200,
+			Height: 0,
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Print("Render Page")
+		outfile, err := os.Create(outputPath)
+		if err != nil {
+			return err
+		}
+		err = png.Encode(outfile, render.Result.Image)
+		fmt.Print("Write to PNG file")
+		return nil
+	*/
+}
 
 /*
 If adding more modules, consider taking a look at this example project
@@ -19,7 +132,7 @@ TODO: using a go library that links directly to graphicsmagic libraries
 might give a moderate performance boost.
 Maybe 40% based on testing under python.
 */
-func gspreviewRoute() api.Route {
+func gspreviewRoute(m *Module) api.Route {
 	return api.Route{
 		Method:      http.MethodPost,
 		Path:        "/forms/gspreview",
@@ -42,11 +155,12 @@ func gspreviewRoute() api.Route {
 					api.NewSentinelHttpError(http.StatusBadRequest, formatErrorMsg),
 				)
 			}
-			sizeArgument := "1200x"
-			if xsize > 0 {
-				sizeArgument = fmt.Sprintf("%dx", xsize)
-			}
-
+			/*
+				sizeArgument := "1200x"
+				if xsize > 0 {
+					sizeArgument = fmt.Sprintf("%dx", xsize)
+				}
+			*/
 			var outputPaths []string
 			for _, inputPath := range inputPaths {
 				toPng := (outputFormat == "auto" && strings.HasSuffix(strings.ToLower(inputPath), ".pdf")) || outputFormat == "png"
@@ -54,16 +168,23 @@ func gspreviewRoute() api.Route {
 				var cmd *gotenberg.Cmd
 				if toPng {
 					// "gm" parameters copied from Eketorp 3.80.0
+					/*
+						outputPath = ctx.GeneratePath(".png")
+						args := []string{
+							"convert", "-adjoin",
+							"-define", "pdf:use-cropbox=true",
+							"-density", "150",
+							"-resize", sizeArgument,
+							"-quality", "100",
+							fmt.Sprintf("%s[0]", inputPath), outputPath,
+						}
+						cmd, err = gotenberg.CommandContext(ctx, ctx.Log(), "gm", args...)
+					*/
 					outputPath = ctx.GeneratePath(".png")
-					args := []string{
-						"convert", "-adjoin",
-						"-define", "pdf:use-cropbox=true",
-						"-density", "150",
-						"-resize", sizeArgument,
-						"-quality", "100",
-						fmt.Sprintf("%s[0]", inputPath), outputPath,
+					err = RenderPdfFileToPng1200px(inputPath, outputPath, m.pdfiumInstance)
+					if err != nil {
+						return fmt.Errorf("failed to convert for %s: %w", inputPath, err)
 					}
-					cmd, err = gotenberg.CommandContext(ctx, ctx.Log(), "gm", args...)
 				} else {
 					outputPath = ctx.GeneratePath(".pdf")
 					args := []string{
@@ -72,15 +193,15 @@ func gspreviewRoute() api.Route {
 						outputPath,
 					}
 					cmd, err = gotenberg.CommandContext(ctx, ctx.Log(), "gm", args...)
-				}
-				if err != nil {
-					return fmt.Errorf("create command: %w", err)
-				}
-				_, err = cmd.Exec()
-				if err != nil {
-					return fmt.Errorf("failed to convert for %s: %w", inputPath, err)
-				}
 
+					if err != nil {
+						return fmt.Errorf("create command: %w", err)
+					}
+					_, err = cmd.Exec()
+					if err != nil {
+						return fmt.Errorf("failed to convert for %s: %w", inputPath, err)
+					}
+				}
 				outputPaths = append(outputPaths, outputPath)
 			}
 
