@@ -2,11 +2,6 @@ name: Build
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        description: 'Branch, tag or commit SHA'
-        required: true
-        default: 'dev'
 
 jobs:
   build:
@@ -15,15 +10,13 @@ jobs:
       - name: Determine image tag
         id: meta
         run: |
-          if echo "${{ inputs.ref }}" | grep -qE '^v[0-9]+.*-prn\.'; then
-            echo "image_tag=${{ inputs.ref }}" >> $GITHUB_OUTPUT
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "image_tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           else
             echo "image_tag=snapshot" >> $GITHUB_OUTPUT
           fi
 
       - uses: actions/checkout@v5
-        with:
-          ref: ${{ inputs.ref }}
 
       - name: Build and push
         uses: ./.github/actions/build-test-push
