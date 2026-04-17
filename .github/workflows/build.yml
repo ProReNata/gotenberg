@@ -31,8 +31,6 @@ jobs:
     outputs:
       tags: ${{ steps.build_test_push.outputs.tags }}
     steps:
-      - uses: actions/checkout@v5
-
       - name: Build, test and push
         id: build_test_push
         uses: ./.github/actions/build-test-push
@@ -46,12 +44,10 @@ jobs:
   build_arm64:
     name: Build linux/arm64
     needs: determine_tag
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     outputs:
       tags: ${{ steps.build_test_push.outputs.tags }}
     steps:
-      - uses: actions/checkout@v5
-
       - name: Build, test and push
         id: build_test_push
         uses: ./.github/actions/build-test-push
@@ -64,14 +60,14 @@ jobs:
 
   merge:
     name: Merge multi-arch manifest
+    if: ${{ !inputs.dry_run }}
     needs: [build_amd64, build_arm64]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-
       - name: Merge
         uses: ./.github/actions/merge
         with:
           docker_hub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           docker_hub_password: ${{ secrets.DOCKERHUB_TOKEN }}
           tags: "${{ needs.build_amd64.outputs.tags }},${{ needs.build_arm64.outputs.tags }}"
+

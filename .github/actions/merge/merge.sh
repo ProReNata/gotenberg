@@ -9,21 +9,11 @@ source .env
 
 # Arguments.
 tags=""
-alternate_registry=""
-dry_run=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --tags)
       tags="$2"
-      shift 2
-      ;;
-    --alternate-registry)
-      alternate_registry="$2"
-      shift 2
-      ;;
-    --dry-run)
-      dry_run=$2
       shift 2
       ;;
     *)
@@ -41,14 +31,6 @@ IFS=',' read -ra tags_to_merge <<< "$tags"
 for tag in "${tags_to_merge[@]}"; do
   echo "- $tag"
 done
-
-if [ -n "$alternate_registry" ]; then
-  echo "⚠️ Will also push to $alternate_registry registry"
-fi
-
-if [ "$dry_run" = "true" ]; then
-  echo "🚧 Dry run"
-fi
 echo
 
 # Build merge map.
@@ -62,29 +44,16 @@ for tag in "${tags_to_merge[@]}"; do
 done
 
 # Merge tags.
-run_cmd() {
-  local cmd="$1"
-
-  if [ "$dry_run" = "true" ]; then
-    echo "🚧 Dry run - would run the following command:"
-    echo "$cmd"
-    echo
-  else
-    echo "⚙️ Running command:"
-    echo "$cmd"
-    eval "$cmd"
-    echo
-  fi
-}
-
 for target in "${!merge_map[@]}"; do
   IFS=' ' read -ra source_tags <<< "${merge_map[$target]}"
 
   cmd="docker buildx imagetools create \
        -t $target \
-       ${source_tags[*]}
-   "
-  run_cmd "$cmd"
+       ${source_tags[*]}"
+
+  echo "⚙️ Running command:"
+  echo "$cmd"
+  eval "$cmd"
 
   echo "➡️ $target pushed"
   echo

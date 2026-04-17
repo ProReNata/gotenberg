@@ -3,10 +3,6 @@ description: Build, test and push Docker image for a given platform
 author: Julien Neuhart
 
 inputs:
-  github_token:
-    description: The GitHub token
-    required: true
-    default: ${{ github.token }}
   docker_hub_username:
     description: The Docker Hub username
     required: true
