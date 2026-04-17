@@ -2,6 +2,11 @@ name: Build
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (build but do not push)'
+        type: boolean
+        default: false
 
 jobs:
   determine_tag:
@@ -36,6 +41,7 @@ jobs:
           docker_hub_password: ${{ secrets.DOCKERHUB_TOKEN }}
           version: ${{ needs.determine_tag.outputs.image_tag }}
           platform: linux/amd64
+          dry_run: ${{ inputs.dry_run }}
 
   build_arm64:
     name: Build linux/arm64
@@ -54,6 +60,7 @@ jobs:
           docker_hub_password: ${{ secrets.DOCKERHUB_TOKEN }}
           version: ${{ needs.determine_tag.outputs.image_tag }}
           platform: linux/arm64
+          dry_run: ${{ inputs.dry_run }}
 
   merge:
     name: Merge multi-arch manifest
