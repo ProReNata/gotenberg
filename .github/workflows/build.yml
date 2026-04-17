@@ -4,8 +4,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  determine_tag:
+    name: Determine image tag
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
     steps:
       - name: Determine image tag
         id: meta
@@ -16,12 +19,52 @@ jobs:
             echo "image_tag=snapshot" >> $GITHUB_OUTPUT
           fi
 
+  build_amd64:
+    name: Build linux/amd64
+    needs: determine_tag
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.build_test_push.outputs.tags }}
+    steps:
       - uses: actions/checkout@v5
 
-      - name: Build and push
+      - name: Build, test and push
+        id: build_test_push
         uses: ./.github/actions/build-test-push
         with:
           docker_hub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           docker_hub_password: ${{ secrets.DOCKERHUB_TOKEN }}
-          version: ${{ steps.meta.outputs.image_tag }}
+          version: ${{ needs.determine_tag.outputs.image_tag }}
           platform: linux/amd64
+
+  build_arm64:
+    name: Build linux/arm64
+    needs: determine_tag
+    runs-on: ubuntu-24.04-arm
+    outputs:
+      tags: ${{ steps.build_test_push.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build, test and push
+        id: build_test_push
+        uses: ./.github/actions/build-test-push
+        with:
+          docker_hub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          docker_hub_password: ${{ secrets.DOCKERHUB_TOKEN }}
+          version: ${{ needs.determine_tag.outputs.image_tag }}
+          platform: linux/arm64
+
+  merge:
+    name: Merge multi-arch manifest
+    needs: [build_amd64, build_arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Merge
+        uses: ./.github/actions/merge
+        with:
+          docker_hub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          docker_hub_password: ${{ secrets.DOCKERHUB_TOKEN }}
+          tags: "${{ needs.build_amd64.outputs.tags }},${{ needs.build_arm64.outputs.tags }}"
