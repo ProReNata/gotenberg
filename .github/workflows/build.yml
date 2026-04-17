@@ -1,0 +1,73 @@
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (build but do not push)'
+        type: boolean
+        default: false
+
+jobs:
+  determine_tag:
+    name: Determine image tag
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - name: Determine image tag
+        id: meta
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "image_tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "image_tag=snapshot" >> $GITHUB_OUTPUT
+          fi
+
+  build_amd64:
+    name: Build linux/amd64
+    needs: determine_tag
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.build_test_push.outputs.tags }}
+    steps:
+      - name: Build, test and push
+        id: build_test_push
+        uses: ./.github/actions/build-test-push
+        with:
+          docker_hub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          docker_hub_password: ${{ secrets.DOCKERHUB_TOKEN }}
+          version: ${{ needs.determine_tag.outputs.image_tag }}
+          platform: linux/amd64
+          dry_run: ${{ inputs.dry_run }}
+
+  build_arm64:
+    name: Build linux/arm64
+    needs: determine_tag
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.build_test_push.outputs.tags }}
+    steps:
+      - name: Build, test and push
+        id: build_test_push
+        uses: ./.github/actions/build-test-push
+        with:
+          docker_hub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          docker_hub_password: ${{ secrets.DOCKERHUB_TOKEN }}
+          version: ${{ needs.determine_tag.outputs.image_tag }}
+          platform: linux/arm64
+          dry_run: ${{ inputs.dry_run }}
+
+  merge:
+    name: Merge multi-arch manifest
+    if: ${{ !inputs.dry_run }}
+    needs: [build_amd64, build_arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge
+        uses: ./.github/actions/merge
+        with:
+          docker_hub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          docker_hub_password: ${{ secrets.DOCKERHUB_TOKEN }}
+          tags: "${{ needs.build_amd64.outputs.tags }},${{ needs.build_arm64.outputs.tags }}"
+

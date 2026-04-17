@@ -1,12 +1,8 @@
 name: Merge
-description: Merge tags to single multi-platform tags
+description: Merge tags to single multi-platform manifest
 author: Julien Neuhart
 
 inputs:
-  github_token:
-    description: The GitHub token
-    required: true
-    default: ${{ github.token }}
   docker_hub_username:
     description: The Docker Hub username
     required: true
@@ -16,17 +12,10 @@ inputs:
   tags:
     description: Comma separated tags to merge
     required: true
-  alternate_registry:
-    description: Alternate registry to also push resulting tags
-  dry_run:
-    description: Dry run this action
 
 runs:
   using: composite
   steps:
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
-
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
@@ -43,6 +32,4 @@ runs:
       shell: bash
       run: |
         .github/actions/merge/merge.sh \
-          --tags "${{ inputs.tags }}" \
-          --alternate-registry "${{ inputs.alternate_registry }}" \
-          --dry-run "${{ inputs.dry_run }}"
+          --tags "${{ inputs.tags }}"
